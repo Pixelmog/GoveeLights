@@ -9,7 +9,7 @@ using System.Collections.Generic;
 public class CPHInline
 {
 	
-    public string userInput; //the color or scene the user inputs with a channel point redemption
+	public string userInput; //the color, scene, or hex code the user inputs with a channel point redemption
     public string apiKey = Environment.GetEnvironmentVariable("goveeAPIKey"); //Request API key on Govee app
     public string device = Environment.GetEnvironmentVariable("goveeDevice"); //Find by using the getDevices function
     public string model = Environment.GetEnvironmentVariable("goveeModel"); //Find by using the getDevices function
@@ -98,6 +98,15 @@ public class CPHInline
 		{
 			updateColor(userInput); 
 		}
+		else if(userInput.StartsWith("#") && tryParseHexColor(userInput, out int r, out int g, out int b))
+		{
+			updateColor(r, g, b); 
+		}
+		else
+		{
+			CPH.SendMessage("That is not a valid input! Going back to default"); 
+			setDynamicScene(2692, 2584); 
+		}
 		
 		
 		//getAvailableScenes(); use this function to see what scenes are available on your device. Will go to streamer.bot logs 
@@ -114,6 +123,36 @@ public class CPHInline
         int b = color.B; 
 
 
+        string json = $@"
+        {{
+            ""device"": ""{device}"",
+            ""model"": ""{model}"",
+            ""cmd"": {{
+                ""name"": ""color"",
+                ""value"": {{
+                    ""r"": {r},
+                    ""g"": {g},
+                    ""b"": {b}
+                }}
+            }}
+        }}";
+
+        using (var client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Govee-API-Key", apiKey);
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PutAsync("https://developer-api.govee.com/v1/devices/control", content);
+
+            var result = await response.Content.ReadAsStringAsync();
+            CPH.LogInfo($"Status: {response.StatusCode} - {response.ReasonPhrase}");
+            CPH.LogInfo($"Response: {result}");
+        }
+    }
+    
+	public async Task updateColor(int r, int g, int b)
+    {
+ 
         string json = $@"
         {{
             ""device"": ""{device}"",
@@ -219,6 +258,31 @@ public class CPHInline
             CPH.LogInfo("Scene query response: " + result);
         }
     }
+    
+    public bool tryParseHexColor(string hex, out int r, out int g, out int b)
+	{
+		r = g = b = 0;
+
+		if (string.IsNullOrEmpty(hex))
+			return false;
+
+		hex = hex.TrimStart('#');
+
+		if (hex.Length != 6)
+			return false;
+
+		try
+		{
+			r = Convert.ToInt32(hex.Substring(0, 2), 16);
+			g = Convert.ToInt32(hex.Substring(2, 2), 16);
+			b = Convert.ToInt32(hex.Substring(4, 2), 16);
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 
 }
 
