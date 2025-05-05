@@ -9,7 +9,7 @@ using System.Collections.Generic;
 public class CPHInline
 {
 	
-	public string userInput; //the color or scene the user inputs with a channel point redemption
+    public string userInput; //the color or scene the user inputs with a channel point redemption
     public string apiKey = Environment.GetEnvironmentVariable("goveeAPIKey"); //Request API key on Govee app
     public string device = Environment.GetEnvironmentVariable("goveeDevice"); //Find by using the getDevices function
     public string model = Environment.GetEnvironmentVariable("goveeModel"); //Find by using the getDevices function
